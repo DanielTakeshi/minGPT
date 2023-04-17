@@ -258,12 +258,13 @@ class GPT(nn.Module):
         return optimizer
 
     def forward(self, idx, targets=None):
+        # Daniel: idx is the batch of data, token embedding maps categorical input to vectors.
         device = idx.device
         b, t = idx.size()
         assert t <= self.block_size, f"Cannot forward sequence of length {t}, block size is only {self.block_size}"
         pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0) # shape (1, t)
 
-        # forward the GPT model itself
+        # forward the GPT model itself (Daniel: `b` is batch size; position embed will broadcast)
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
         x = self.transformer.drop(tok_emb + pos_emb)

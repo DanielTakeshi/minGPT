@@ -1,3 +1,28 @@
+# Daniel's notes
+
+Coding stuff:
+
+- Using Python 3.8 with PyTorch 2.0 (since it's March 2023). [Summary](https://pyimagesearch.com/2023/03/27/whats-new-in-pytorch-2-0-torch-compile/)
+- Need `transformers` as dependency, see https://github.com/karpathy/minGPT/pull/100, unit tests seem to be OK.
+- TIL: can run `.ipynb` files straight from VSCode. :D `import pdb; pdb.set_trace()` GUI seems tricky and requires a restart to reflect code updates.
+- `demo.ipynb`: vocabulary is directly the set of digits starting from 0, no need for separate item-to-index mapping.
+
+minGPT notes:
+
+- GELU activation, as is the case in most Transformer-models these days.
+- `nn.Embedding`. [Docs](https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html), FAQs: [this](https://stackoverflow.com/questions/65445174/what-is-the-difference-between-an-embedding-layer-with-a-bias-immediately-afterw). GPT-4 produced a reasonable answer.
+- Vocab = "token embedding", block = "position embedding."
+- `vocab_size` and `block_size` as parameters (e.g., for demo, vocab = num of distinct characters).
+- `n_heads`: used in multi-head self-attention in `CausalSelfAttention`.
+- Start forward pass with two embeddings: one for vocab, one for block, both map to "continuous" vector of `n_embd` items.
+- Then dropout applied on: `tok_emb + pos_emb`.
+- Then sequence of `Block` forward passes (based on `n_layers` param).
+- Last part: `nn.Linear` to project to logits of size `vocab_size`, then standard cross-entropy loss for classification.
+- Last linear layer uses the same embedding dimensions, so that must be held consistent (is that just a convention?).
+- Inner `Block` sequences don't change dimensions, `demo.ipynb` keeps it at (batch, 11, 48), 11 due to `block_size`.
+- In 2017 Attention paper, they used sinusoidal position embeddings, but here we use _learned_ position embeddings.
+
+Rest of README is straight from the repo, thanks Andrej.
 
 # minGPT
 
