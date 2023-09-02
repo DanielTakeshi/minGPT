@@ -1,26 +1,52 @@
 # Daniel's notes
 
-Coding stuff:
+<details>
+<summary>
+Coding stuff and the example notebooks:
+</summary>
 
 - Using Python 3.8 with PyTorch 2.0 (since it's March 2023). [Summary](https://pyimagesearch.com/2023/03/27/whats-new-in-pytorch-2-0-torch-compile/)
 - Need `transformers` as dependency, see https://github.com/karpathy/minGPT/pull/100, unit tests seem to be OK.
 - TIL: can run `.ipynb` files straight from VSCode. :D `import pdb; pdb.set_trace()` GUI seems tricky and requires a restart to reflect code updates.
-- `demo.ipynb`: vocabulary is directly the set of digits starting from 0, no need for separate item-to-index mapping.
 
+For the demo `demo.ipynb`:
+
+- Vocabulary is directly the set of digits (0 through 9), no need for separate item-to-index mapping. We can specify `num_digits`, the default is 3 which means using just {0,1,2} as the vocabulary.
+- Block size is `length*2 - 1` why? The combination of input+output is 6+6=12 (assuming `length=6`) but the input/output are shifted by 1, since the model has to predict the last thing.
+- Get a single item (`__getitem__`) by sampling sequences of integers.
+- Forward pass embeds input data (what we'd call "tokens") into continuous values. E.g., if data input shape is (batch size, time=11) then embedding makes it (batch size, time=11, embed_dim).
+- Forward pass also _create_ a "position" vector, `[[0,1,...,11]]` which is the input to position embeddings.
+- ADD embeddings of inputs and positions, BEFORE passing through the rest of the model.
+- Block sequences keep dimensions at (batch, 11, 48).
+- Shape of logits in training? (Batch size, 11, 3), by default since there are 11 items in the input block and 3 characters (it's classification over the 3 characters).
+- Getting 5000/5000 for  both train _and_ test.
+
+</details>
+
+
+<details>
+<summary>
 minGPT notes:
+</summary>
 
 - GELU activation, as is the case in most Transformer-models these days.
 - `nn.Embedding`. [Docs](https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html), FAQs: [this](https://stackoverflow.com/questions/65445174/what-is-the-difference-between-an-embedding-layer-with-a-bias-immediately-afterw). GPT-4 produced a reasonable answer.
 - Vocab = "token embedding", block = "position embedding."
 - `vocab_size` and `block_size` as parameters (e.g., for demo, vocab = num of distinct characters).
 - `n_heads`: used in multi-head self-attention in `CausalSelfAttention`.
+- I think `gpt2-xl` in the model configuration is similar to the GPT-2 paper since the number of layers matches (48) but the parameter counts differ a bit.
 - Start forward pass with two embeddings: one for vocab, one for block, both map to "continuous" vector of `n_embd` items.
 - Then dropout applied on: `tok_emb + pos_emb`.
 - Then sequence of `Block` forward passes (based on `n_layers` param).
 - Last part: `nn.Linear` to project to logits of size `vocab_size`, then standard cross-entropy loss for classification.
 - Last linear layer uses the same embedding dimensions, so that must be held consistent (is that just a convention?).
-- Inner `Block` sequences don't change dimensions, `demo.ipynb` keeps it at (batch, 11, 48), 11 due to `block_size`.
-- In 2017 Attention paper, they used sinusoidal position embeddings, but here we use _learned_ position embeddings.
+- Inner `Block` sequences *don't change dimensions of the data*.
+- In 2017 Attention paper, they used sinusoidal position embeddings, but here we use _learned_ position embeddings. Remember, these are used to inform the model about the input ordering.
+- Crucial implementation detail: Byte Pair Encoding (BPE) for translating strings into sequences of integers. See Section 2.2 of the GPT-2 paper for an overview, but `bpe.py` explains it much better. Do this, then we can pass the input through embedding layers.
+
+Other stuff like the Trainer makes sense, it's not GPT-specific...
+
+</details>
 
 Rest of README is straight from the repo, thanks Andrej.
 

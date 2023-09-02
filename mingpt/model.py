@@ -71,7 +71,16 @@ class CausalSelfAttention(nn.Module):
         return y
 
 class Block(nn.Module):
-    """ an unassuming Transformer block """
+    """ an unassuming Transformer block
+
+    Daniel: from GPT-2 paper:
+    - Layer norm moved to input of each sub-block (self.ln_1?).
+    - Another layer norm after final self-attention block (self.ln_2?).
+    - Causal self-attention, see docs above, so each token can only attend to prior
+        tokens in the input sequence.
+    - Here, c_fc and c_proj are such that c_fj 'expands' dimension of data to 4X the
+        original size, while c_proj later reduces it back to the original dimension.
+    """
 
     def __init__(self, config):
         super().__init__()
